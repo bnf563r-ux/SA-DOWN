@@ -20,8 +20,10 @@ def fix_tiktok_url(url):
         url = r.url
     except:
         pass
+
     if "/photo/" in url:
         url = url.replace("/photo/", "/video/")
+
     return url
 
 
@@ -37,7 +39,6 @@ def get_instagram_images(url):
 
     try:
         post = Post.from_shortcode(loader.context, shortcode)
-
         images = []
 
         if post.typename == "GraphImage":
@@ -62,7 +63,6 @@ def save_user(user_id):
 
     if user_id not in users:
         users.append(user_id)
-
         with open("users.json", "w") as f:
             json.dump(users, f)
 
@@ -100,14 +100,12 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
 
     if not url_regex.search(text):
-
         await update.message.reply_text(
-            "حبيبي حط رابط تضحك عليه انته ههههههههههههههههههههههههههههههههه\n\nصانع البوت ----» @wi6j1"
+            "حبيبي حط رابط تضحك عليه انته ههههههههههههههههههههههههههههههههه\n\nصانع البوت ----» @QZHWAS"
         )
         return
 
     url = fix_tiktok_url(text)
-
     context.user_data["url"] = url
 
     buttons = [
@@ -119,7 +117,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup(buttons)
 
     await update.message.reply_text(
-        "اختر نوع التحميل\n\nصانع البوت ----» @wi6j1",
+        "اختر نوع التحميل\n\nصانع البوت ----» @QZHWAS",
         reply_markup=keyboard
     )
 
@@ -132,7 +130,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = context.user_data.get("url")
 
     if not url:
-        await query.edit_message_text("غلط بالرابط تأكد منه\n\nصانع البوت ----» @wi6j1")
+        await query.edit_message_text("غلط بالرابط تأكد منه\n\nصانع البوت ----» @QZHWAS")
         return
 
     rocket = await query.message.reply_text("🚀")
@@ -142,17 +140,15 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if query.data == "image":
 
             if "instagram.com" in url:
-
                 images = get_instagram_images(url)
 
                 if images:
-
                     await query.message.reply_text("✅")
 
                     for img in images:
                         await query.message.reply_photo(
                             photo=img,
-                            caption="صانع البوت ----» @wi6j1"
+                            caption="صانع البوت ----» @QZHWAS"
                         )
 
                     await rocket.delete()
@@ -172,13 +168,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         image_urls.append(entry["thumbnails"][-1]["url"])
 
             if image_urls:
-
                 await query.message.reply_text("✅")
 
                 for img in image_urls:
                     await query.message.reply_photo(
                         photo=img,
-                        caption="صانع البوت ----» @wi6j1"
+                        caption="صانع البوت ----» @QZHWAS"
                     )
 
         elif query.data == "video":
@@ -197,7 +192,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_video(
                 video=open(filename, "rb"),
-                caption="صانع البوت ----» @wi6j1"
+                caption="صانع البوت ----» @QZHWAS"
             )
 
             os.remove(filename)
@@ -218,7 +213,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_voice(
                 voice=open(filename, "rb"),
-                caption="صانع البوت ----» @wi6j1"
+                caption="صانع البوت ----» @QZHWAS"
             )
 
             os.remove(filename)
@@ -226,20 +221,17 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await rocket.delete()
 
     except:
-
         await rocket.delete()
 
         await query.message.reply_text(
-            "غلط بالرابط تاكد منه\n\nصانع البوت ----» @wi6j1"
+            "غلط بالرابط تاكد منه\n\nصانع البوت ----» @QZHWAS"
         )
 
 
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("allm", broadcast))
-
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-
 app.add_handler(CallbackQueryHandler(button_handler))
 
 app.run_polling()
