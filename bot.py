@@ -21,8 +21,8 @@ IG_PASSWORD = os.getenv("IG_PASSWORD")
 try:
     loader.login(IG_USERNAME, IG_PASSWORD)
     print("تم تسجيل الدخول في انستغرام ✅")
-except:
-    print("فشل تسجيل الدخول ❌")
+except Exception as e:
+    print("فشل تسجيل الدخول ❌", e)
 
 def fix_tiktok_url(url):
     try:
@@ -61,7 +61,6 @@ def get_instagram_images(url):
     except:
         return []
 
-# 🔻 باقي الكود نفسه بدون أي تغيير
 def save_user(user_id):
     try:
         with open("users.json", "r") as f:
@@ -148,6 +147,8 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     return
 
         elif query.data == "video":
+
+            # 🔥 Instagram مباشر
             if "instagram.com" in url:
                 try:
                     shortcode = extract_shortcode(url)
@@ -163,6 +164,50 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except:
                     pass
 
+            # 🔥 TikTok + باقي المواقع
+            ydl_opts = {
+                "format": "mp4",
+                "outtmpl": "video.%(ext)s",
+                "quiet": True,
+                "nocheckcertificate": True,
+                "ignoreerrors": True,
+                "no_warnings": True,
+                "user_agent": "Mozilla/5.0"
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(info)
+
+            await query.message.reply_text("✅")
+
+            await query.message.reply_video(
+                video=open(filename, "rb"),
+                caption="صانع البوت ----» @QZHWAS"
+            )
+
+            os.remove(filename)
+
+        elif query.data == "voice":
+            ydl_opts = {
+                "format": "bestaudio/best",
+                "outtmpl": "voice.%(ext)s",
+                "quiet": True
+            }
+
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=True)
+                filename = ydl.prepare_filename(info)
+
+            await query.message.reply_text("✅")
+
+            await query.message.reply_voice(
+                voice=open(filename, "rb"),
+                caption="صانع البوت ----» @QZHWAS"
+            )
+
+            os.remove(filename)
+
         await rocket.delete()
 
     except:
@@ -170,7 +215,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text("غلط بالرابط تاكد منه ")
 
 app = ApplicationBuilder().token(TOKEN).build()
+
 app.add_handler(CommandHandler("allm", broadcast))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
 app.add_handler(CallbackQueryHandler(button_handler))
+
 app.run_polling()
