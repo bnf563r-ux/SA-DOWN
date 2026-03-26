@@ -134,6 +134,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         if query.data == "image":
+
             if "instagram.com" in url:
                 images = get_instagram_images(url)
                 if images:
@@ -146,9 +147,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await rocket.delete()
                     return
 
+            # TikTok (إضافة فقط)
+            if "tiktok.com" in url:
+                try:
+                    api = f"https://tikwm.com/api/?url={url}"
+                    res = requests.get(api).json()
+                    images = res.get("data", {}).get("images", [])
+
+                    if images:
+                        await query.message.reply_text("✅")
+                        for img in images:
+                            await query.message.reply_photo(
+                                photo=img,
+                                caption="صانع البوت ----» @QZHWAS"
+                            )
+                        await rocket.delete()
+                        return
+                except:
+                    pass
+
         elif query.data == "video":
 
-            # 🔥 Instagram مباشر
             if "instagram.com" in url:
                 try:
                     shortcode = extract_shortcode(url)
@@ -164,7 +183,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except:
                     pass
 
-            # 🔥 TikTok + باقي المواقع
             ydl_opts = {
                 "format": "mp4",
                 "outtmpl": "video.%(ext)s",
