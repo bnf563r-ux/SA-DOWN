@@ -147,7 +147,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await rocket.delete()
                     return
 
-            # TikTok (إضافة فقط)
             if "tiktok.com" in url:
                 try:
                     api = f"https://tikwm.com/api/?url={url}"
@@ -161,6 +160,25 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                 photo=img,
                                 caption="صانع البوت ----» @QZHWAS"
                             )
+                        await rocket.delete()
+                        return
+                except:
+                    pass
+
+            # ✅ YouTube thumbnail
+            if "youtube.com" in url or "youtu.be" in url:
+                try:
+                    ydl_opts = {"quiet": True}
+                    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                        info = ydl.extract_info(url, download=False)
+                        thumb = info.get("thumbnail")
+
+                    if thumb:
+                        await query.message.reply_text("✅")
+                        await query.message.reply_photo(
+                            photo=thumb,
+                            caption="صانع البوت ----» @QZHWAS"
+                        )
                         await rocket.delete()
                         return
                 except:
@@ -207,15 +225,21 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             os.remove(filename)
 
         elif query.data == "voice":
+
             ydl_opts = {
                 "format": "bestaudio/best",
                 "outtmpl": "voice.%(ext)s",
-                "quiet": True
+                "quiet": True,
+                "postprocessors": [{
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "mp3",
+                }]
             }
 
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=True)
                 filename = ydl.prepare_filename(info)
+                filename = os.path.splitext(filename)[0] + ".mp3"
 
             await query.message.reply_text("✅")
 
