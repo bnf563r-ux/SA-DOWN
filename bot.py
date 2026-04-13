@@ -14,7 +14,6 @@ url_regex = re.compile(r'https?://')
 
 loader = Instaloader()
 
-# 🔐 تسجيل دخول انستغرام
 IG_USERNAME = os.getenv("IG_USERNAME")
 IG_PASSWORD = os.getenv("IG_PASSWORD")
 
@@ -102,7 +101,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not url_regex.search(text):
         await update.message.reply_text(
-            "حبيبي حط رابط تضحك عليه انته ههههههههههههههههههههههههههههههههه\n\nصانع البوت ----» @wi6j1"
+            "حبيبي حط رابط"
         )
         return
 
@@ -117,7 +116,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = InlineKeyboardMarkup(buttons)
 
     await update.message.reply_text(
-        "اختر نوع التحميل\n\nصانع البوت ----» @wi6j1",
+        "اختر نوع التحميل",
         reply_markup=keyboard
     )
 
@@ -127,7 +126,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     url = context.user_data.get("url")
 
     if not url:
-        await query.edit_message_text("غلط بالرابط تأكد منه\n\nصانع البوت ----» @wi6j1")
+        await query.edit_message_text("غلط بالرابط تأكد منه")
         return
 
     rocket = await query.message.reply_text("🚀")
@@ -140,10 +139,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 if images:
                     await query.message.reply_text("✅")
                     for img in images:
-                        await query.message.reply_photo(
-                            photo=img,
-                            caption="صانع البوت ----» @wi6j1"
-                        )
+                        await query.message.reply_photo(photo=img)
                     await rocket.delete()
                     return
 
@@ -156,16 +152,12 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     if images:
                         await query.message.reply_text("✅")
                         for img in images:
-                            await query.message.reply_photo(
-                                photo=img,
-                                caption="صانع البوت ----» @wi6j1"
-                            )
+                            await query.message.reply_photo(photo=img)
                         await rocket.delete()
                         return
                 except:
                     pass
 
-            # ✅ YouTube thumbnail
             if "youtube.com" in url or "youtu.be" in url:
                 try:
                     ydl_opts = {"quiet": True}
@@ -175,10 +167,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                     if thumb:
                         await query.message.reply_text("✅")
-                        await query.message.reply_photo(
-                            photo=thumb,
-                            caption="صانع البوت ----» @wi6j1"
-                        )
+                        await query.message.reply_photo(photo=thumb)
                         await rocket.delete()
                         return
                 except:
@@ -192,10 +181,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     post = Post.from_shortcode(loader.context, shortcode)
                     if post.is_video:
                         await query.message.reply_text("✅")
-                        await query.message.reply_video(
-                            video=post.video_url,
-                            caption="صانع البوت ----» @wi6j1"
-                        )
+                        await query.message.reply_video(video=post.video_url)
                         await rocket.delete()
                         return
                 except:
@@ -217,10 +203,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_text("✅")
 
-            await query.message.reply_video(
-                video=open(filename, "rb"),
-                caption="صانع البوت ----» @wi6j1"
-            )
+            await query.message.reply_video(video=open(filename, "rb"))
 
             os.remove(filename)
 
@@ -243,10 +226,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             await query.message.reply_text("✅")
 
-            await query.message.reply_voice(
-                voice=open(filename, "rb"),
-                caption="صانع البوت ----» @wi6j1"
-            )
+            await query.message.reply_voice(voice=open(filename, "rb"))
 
             os.remove(filename)
 
@@ -254,7 +234,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except:
         await rocket.delete()
-        await query.message.reply_text("غلط بالرابط تاكد منه ")
+        await query.message.reply_text("غلط بالرابط تاكد منه")
 
 app = ApplicationBuilder().token(TOKEN).build()
 
