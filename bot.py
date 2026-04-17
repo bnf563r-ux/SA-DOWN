@@ -23,6 +23,56 @@ try:
 except Exception as e:
     print("فشل تسجيل الدخول ❌", e)
 
+# ================== كلاس تحميل تيك توك ==================
+class TikTokDownloader:
+    def __init__(self):
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        self.api_url = "https://tikwm.com/api/"
+
+    def get_data(self, url: str):
+        try:
+            response = self.session.get(self.api_url, params={"url": url}, timeout=15)
+            response.raise_for_status()
+            data = response.json()
+            if data.get('code') == 0:
+                return data.get('data')
+            return None
+        except Exception as e:
+            print(f"خطأ في جلب بيانات تيك توك: {e}")
+            return None
+
+    def download_file(self, file_url: str, filename: str):
+        try:
+            resp = self.session.get(file_url, stream=True, timeout=30)
+            resp.raise_for_status()
+            with open(filename, 'wb') as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            return True
+        except Exception as e:
+            print(f"خطأ في تحميل ملف تيك توك: {e}")
+            return False
+
+    def get_available_formats(self, data: dict):
+        formats = {}
+        if data.get('play'):
+            formats['mp4'] = data['play']
+        if data.get('hdplay'):
+            formats['hd'] = data['hdplay']
+        if data.get('music'):
+            formats['mp3'] = data['music']
+        if data.get('cover'):
+            formats['cover'] = data['cover']
+        if data.get('wmplay'):
+            formats['wm'] = data['wmplay']
+        return formats
+
+tiktok_downloader = TikTokDownloader()
+
+# ================== دوال مساعدة ==================
 def fix_tiktok_url(url):
     try:
         r = requests.get(url, allow_redirects=True)
@@ -72,6 +122,7 @@ def save_user(user_id):
         with open("users.json", "w") as f:
             json.dump(users, f)
 
+# ================== أوامر البوت ==================
 async def broadcast(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != OWNER_ID:
         return
@@ -101,7 +152,7 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not url_regex.search(text):
         await update.message.reply_text(
-            "حبيبي حط رابط"
+            "حبيبي حط رابط تضحك عليه انت ههههههههههههههههههههههههههههههههه "
         )
         return
 
@@ -132,8 +183,9 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     rocket = await query.message.reply_text("🚀")
 
     try:
+        # ------------------ تحميل كصورة ------------------
         if query.data == "image":
-
+            # محاولة انستغرام
             if "instagram.com" in url:
                 images = get_instagram_images(url)
                 if images:
@@ -143,28 +195,35 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     await rocket.delete()
                     return
 
+            # محاولة تيك توك (صور متعددة أو صورة الغلاف)
             if "tiktok.com" in url:
                 try:
-                    api = f"https://tikwm.com/api/?url={url}"
-                    res = requests.get(api).json()
-                    images = res.get("data", {}).get("images", [])
-
-                    if images:
-                        await query.message.reply_text("✅")
-                        for img in images:
-                            await query.message.reply_photo(photo=img)
-                        await rocket.delete()
-                        return
+                    data = tiktok_downloader.get_data(url)
+                    if data:
+                        images = data.get("images", [])
+                        if images:
+                            await query.message.reply_text("✅")
+                            for img in images:
+                                await query.message.reply_photo(photo=img)
+                            await rocket.delete()
+                            return
+                        # إذا لم توجد صور متعددة، جرب صورة الغلاف
+                        cover = data.get("cover")
+                        if cover:
+                            await query.message.reply_text("✅")
+                            await query.message.reply_photo(photo=cover)
+                            await rocket.delete()
+                            return
                 except:
                     pass
 
+            # محاولة يوتيوب (صورة مصغرة)
             if "youtube.com" in url or "youtu.be" in url:
                 try:
                     ydl_opts = {"quiet": True}
                     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                         info = ydl.extract_info(url, download=False)
                         thumb = info.get("thumbnail")
-
                     if thumb:
                         await query.message.reply_text("✅")
                         await query.message.reply_photo(photo=thumb)
@@ -173,8 +232,14 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except:
                     pass
 
-        elif query.data == "video":
+            # إذا لم ينجح أي شيء
+            await rocket.delete()
+            await query.message.reply_text("ماكو صورة حمل كفيديو")
+            return
 
+        # ------------------ تحميل كفيديو ------------------
+        elif query.data == "video":
+            # انستغرام
             if "instagram.com" in url:
                 try:
                     shortcode = extract_shortcode(url)
@@ -187,6 +252,27 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 except:
                     pass
 
+            # تيك توك (باستخدام الكود المخصص)
+            if "tiktok.com" in url:
+                try:
+                    data = tiktok_downloader.get_data(url)
+                    if data:
+                        # نفضل HD إن وجد، وإلا العادي
+                        video_url = data.get("hdplay") or data.get("play")
+                        if video_url:
+                            # اسم مؤقت
+                            filename = "tiktok_video.mp4"
+                            if tiktok_downloader.download_file(video_url, filename):
+                                await query.message.reply_text("✅")
+                                with open(filename, "rb") as f:
+                                    await query.message.reply_video(video=f)
+                                os.remove(filename)
+                                await rocket.delete()
+                                return
+                except Exception as e:
+                    print(f"خطأ في فيديو تيك توك: {e}")
+
+            # يوتيوب أو أي رابط آخر باستخدام yt-dlp
             ydl_opts = {
                 "format": "mp4",
                 "outtmpl": "video.%(ext)s",
@@ -196,19 +282,44 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "no_warnings": True,
                 "user_agent": "Mozilla/5.0"
             }
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    filename = ydl.prepare_filename(info)
+                await query.message.reply_text("✅")
+                with open(filename, "rb") as f:
+                    await query.message.reply_video(video=f)
+                os.remove(filename)
+                await rocket.delete()
+                return
+            except:
+                pass
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                filename = ydl.prepare_filename(info)
+            await rocket.delete()
+            await query.message.reply_text("غلط بالرابط تاكد منه")
+            return
 
-            await query.message.reply_text("✅")
-
-            await query.message.reply_video(video=open(filename, "rb"))
-
-            os.remove(filename)
-
+        # ------------------ تحميل كبصمة (صوت) ------------------
         elif query.data == "voice":
+            # تيك توك (تحميل الصوت مباشرة)
+            if "tiktok.com" in url:
+                try:
+                    data = tiktok_downloader.get_data(url)
+                    if data:
+                        music_url = data.get("music")
+                        if music_url:
+                            filename = "tiktok_audio.mp3"
+                            if tiktok_downloader.download_file(music_url, filename):
+                                await query.message.reply_text("✅")
+                                with open(filename, "rb") as f:
+                                    await query.message.reply_voice(voice=f)
+                                os.remove(filename)
+                                await rocket.delete()
+                                return
+                except Exception as e:
+                    print(f"خطأ في صوت تيك توك: {e}")
 
+            # يوتيوب أو غيره باستخدام yt-dlp
             ydl_opts = {
                 "format": "bestaudio/best",
                 "outtmpl": "voice.%(ext)s",
@@ -218,24 +329,29 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     "preferredcodec": "mp3",
                 }]
             }
+            try:
+                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                    info = ydl.extract_info(url, download=True)
+                    filename = ydl.prepare_filename(info)
+                    filename = os.path.splitext(filename)[0] + ".mp3"
+                await query.message.reply_text("✅")
+                with open(filename, "rb") as f:
+                    await query.message.reply_voice(voice=f)
+                os.remove(filename)
+                await rocket.delete()
+                return
+            except:
+                pass
 
-            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(url, download=True)
-                filename = ydl.prepare_filename(info)
-                filename = os.path.splitext(filename)[0] + ".mp3"
+            await rocket.delete()
+            await query.message.reply_text("غلط بالرابط تاكد منه")
 
-            await query.message.reply_text("✅")
-
-            await query.message.reply_voice(voice=open(filename, "rb"))
-
-            os.remove(filename)
-
-        await rocket.delete()
-
-    except:
+    except Exception as e:
+        print(f"خطأ عام: {e}")
         await rocket.delete()
         await query.message.reply_text("غلط بالرابط تاكد منه")
 
+# ================== تشغيل البوت ==================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("allm", broadcast))
